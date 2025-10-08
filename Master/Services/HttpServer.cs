@@ -16,16 +16,16 @@ public class HttpServer
         _routeManager = new RouteManager(new MasterController());
     }
 
-    public void Start()
+    public async Task StartAsync()
     {
         _listener.Start();
         Console.WriteLine($"[Master] Server started on {_listener.Prefixes.First()}");
         Console.WriteLine("Press Ctrl+C to stop.");
 
-        while (true)
+        while (_listener.IsListening)
         {
-            var context = _listener.GetContext();
-            Task.Run(() => _routeManager.HandleRequest(context));
+            var context = await _listener.GetContextAsync();
+            _ = Task.Run(() => _routeManager.HandleRequest(context));
         }
     }
 
