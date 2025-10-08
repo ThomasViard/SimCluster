@@ -1,7 +1,5 @@
 ﻿using Master.Services;
 
-Console.WriteLine("Hello, World!");
-
 try
 {
     var server = new HttpServer("http://localhost:8080/");
