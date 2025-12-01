@@ -39,9 +39,14 @@ public class MasterController(IWorkerManagementService workerManagementService) 
         {
             return BadRequest(new { error = "WorkerId is required" });
         }
+        var existing = workerManagementService.GetWorker(request.WorkerId);
+        if (existing == null)
+        {
+            // Unknown worker: force caller to re-register
+            return NotFound(new { error = $"Worker {request.WorkerId} not registered" });
+        }
 
         workerManagementService.UpdateHeartbeat(request.WorkerId, request.IsReady, request.FreeThreads);
-
         return Ok(new { success = true, message = "Heartbeat received" });
     }
 

@@ -60,6 +60,6 @@ lifetime.ApplicationStopping.Register(() =>
 });
 
 Console.WriteLine($"Worker-{workerId} starting on http://localhost:{port}");
-Console.WriteLine($"Connected to Master at {masterUrl}");
+Console.WriteLine($"Trying to connect to Master at {masterUrl}");
 
 app.Run();

@@ -32,16 +32,7 @@ public class HeartbeatService(
         {
             var success = await SendHeartbeat();
 
-            if (success)
-            {
-                if (!_isConnectedToMaster)
-                {
-                    Console.WriteLine("Reconnected to Master");
-                    _isConnectedToMaster = true;
-                }
-                _consecutiveFailures = 0;
-            }
-            else
+            if (!success)
             {
                 _consecutiveFailures++;
 
@@ -81,6 +72,34 @@ public class HeartbeatService(
             {
                 Console.WriteLine("Heartbeat sent");
                 return true;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("Master does not recognize this worker yet (404). Attempting registration...");
+                try
+                {
+                    var regClient = _httpClientFactory.CreateClient();
+                    regClient.Timeout = TimeSpan.FromSeconds(5);
+                    var regRequest = new WorkerRegistrationRequest
+                    {
+                        WorkerId = _config.WorkerId,
+                        Url = _config.WorkerUrl
+                    };
+                    var regResponse = await regClient.PostAsJsonAsync($"{_config.MasterUrl}/api/master/register", regRequest);
+                    if (regResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine("Registration succeeded after heartbeat 404");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Opportunistic registration failed: HTTP {regResponse.StatusCode}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Opportunistic registration error: {ex.Message}");
+                }
+                return false;
             }
             else
             {
