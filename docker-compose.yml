@@ -40,9 +40,12 @@ services:
     image: simcluster-dashboard:dev
     container_name: simcluster-dashboard
     ports:
-      - "3000:80"
+      - "3000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - MASTER_URL=http://master:8080
+    depends_on:
+      - master
     restart: unless-stopped
 
 networks:

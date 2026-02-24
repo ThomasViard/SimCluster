@@ -14,7 +14,13 @@ builder.Services.AddSingleton<WorkerRegistry>();
 builder.Services.AddScoped<IWorkerManagementService, WorkerManagementService>();
 builder.Services.AddSingleton<ShutdownNotificationService>();
 builder.Services.AddSingleton<TaskQueue>();
-builder.Services.AddSingleton<IScheduler, RoundRobinScheduler>();
+
+var schedulerType = Environment.GetEnvironmentVariable("SCHEDULER") ?? "round-robin";
+if (schedulerType == "least-loaded")
+    builder.Services.AddSingleton<IScheduler, LeastLoadedScheduler>();
+else
+    builder.Services.AddSingleton<IScheduler, RoundRobinScheduler>();
+
 builder.Services.AddScoped<ITaskManagementService, TaskManagementService>();
 builder.Services.AddHttpClient();
 
