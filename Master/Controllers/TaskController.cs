@@ -55,16 +55,18 @@ public class TaskController(ITaskManagementService taskService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/completed")]
-    public IActionResult ReportCompleted(Guid id)
+    public async Task<IActionResult> ReportCompleted(Guid id)
     {
         taskService.ReportTaskCompleted(id);
+        await taskService.DispatchNextTaskAsync();
         return Ok(new { success = true });
     }
 
     [HttpPost("{id:guid}/failed")]
-    public IActionResult ReportFailed(Guid id, [FromBody] TaskFailedRequest request)
+    public async Task<IActionResult> ReportFailed(Guid id, [FromBody] TaskFailedRequest request)
     {
         taskService.ReportTaskFailed(id, request.Error ?? "Unknown error");
+        await taskService.DispatchNextTaskAsync();
         return Ok(new { success = true });
     }
 }

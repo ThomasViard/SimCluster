@@ -26,21 +26,17 @@ public class TaskManagementService(
 
     public async Task<TaskModel?> DispatchNextTaskAsync()
     {
-        var pendingTask = taskQueue.GetPending().FirstOrDefault();
-        if (pendingTask == null) return null;
-
         var availableWorkers = workerRegistry.GetAvailableWorkers();
         var selectedWorker = scheduler.SelectWorker(availableWorkers);
-        if (selectedWorker == null)
-        {
-            Console.WriteLine("No available workers for dispatch");
-            return null;
-        }
+        if (selectedWorker == null) return null;
 
-        pendingTask.Status = Models.TaskStatus.Running;
+        var pendingTask = taskQueue.TryClaimForDispatch();
+        if (pendingTask == null) return null;
+
         pendingTask.AssignedWorkerId = selectedWorker.WorkerId;
         pendingTask.StartedAt = DateTime.UtcNow;
 
+        selectedWorker.FreeThreads = Math.Max(0, selectedWorker.FreeThreads - 1);
         Console.WriteLine($"Dispatching task '{pendingTask.Name}' to Worker-{selectedWorker.WorkerId}");
 
         try
@@ -84,6 +80,9 @@ public class TaskManagementService(
         var task = taskQueue.Get(taskId);
         if (task == null) return;
 
+        if (task.AssignedWorkerId != null)
+            workerRegistry.ReleaseWorkerThread(task.AssignedWorkerId);
+
         task.Status = Models.TaskStatus.Completed;
         task.CompletedAt = DateTime.UtcNow;
         Console.WriteLine($"Task '{task.Name}' completed by Worker-{task.AssignedWorkerId} (Duration: {(task.CompletedAt - task.StartedAt)?.TotalMilliseconds:F0}ms)");
@@ -93,6 +92,20 @@ public class TaskManagementService(
     {
         var task = taskQueue.Get(taskId);
         if (task == null) return;
+
+        if (task.AssignedWorkerId != null)
+            workerRegistry.ReleaseWorkerThread(task.AssignedWorkerId);
+
+        if (error.Contains("busy", StringComparison.OrdinalIgnoreCase))
+        {
+            task.Status = Models.TaskStatus.Pending;
+            task.AssignedWorkerId = null;
+            task.StartedAt = null;
+            task.CompletedAt = null;
+            task.ErrorMessage = null;
+            Console.WriteLine($"Task '{task.Name}' re-queued (worker was busy)");
+            return;
+        }
 
         task.Status = Models.TaskStatus.Failed;
         task.CompletedAt = DateTime.UtcNow;

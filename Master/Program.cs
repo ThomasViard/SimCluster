@@ -26,6 +26,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<DockerScalingService>();
 
 builder.Services.AddHostedService<WorkerMonitoringService>();
+builder.Services.AddHostedService<TaskDispatcherService>();
 
 var app = builder.Build();
 

@@ -82,7 +82,15 @@ public class WorkerRegistry
     public IEnumerable<WorkerInfo> GetAvailableWorkers()
     {
         var threshold = DateTime.UtcNow.AddSeconds(-30);
-        return [.. _workers.Values.Where(w => w.IsEnabled && w.IsAvailable && w.LastHeartbeat > threshold && w.IsReady)];
+        return [.. _workers.Values.Where(w => w.IsEnabled && w.IsAvailable && w.LastHeartbeat > threshold && w.IsReady && w.FreeThreads > 0)];
+    }
+
+    public void ReleaseWorkerThread(string workerId)
+    {
+        if (_workers.TryGetValue(workerId, out var worker))
+        {
+            worker.FreeThreads++;
+        }
     }
 
     public void EnableWorker(string workerId)

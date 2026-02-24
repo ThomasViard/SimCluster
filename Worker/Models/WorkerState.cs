@@ -1,14 +1,39 @@
 namespace Worker.Models;
 
-public class WorkerState(int? maxThreads = null)
+public class WorkerState
 {
+    private int _busyThreads;
+    private readonly int _maxThreads;
 
-    private int busyThreads = 0;
-    private readonly int maxThreads = maxThreads ?? Environment.ProcessorCount;
+    public WorkerState(int? maxThreads = null)
+    {
+        _maxThreads = maxThreads ?? Math.Max(16, Environment.ProcessorCount);
+    }
 
-    public bool IsReady => busyThreads < maxThreads;
-    public int FreeThreads => maxThreads - busyThreads;
+    public bool IsReady => _busyThreads < _maxThreads;
+    public int FreeThreads => Math.Max(0, _maxThreads - _busyThreads);
+    public int BusyThreads => _busyThreads;
+    public int MaxThreads => _maxThreads;
 
-    public void StartTask() => Interlocked.Increment(ref busyThreads);
-    public void FinishTask() => Interlocked.Decrement(ref busyThreads);
+    public bool TryStartTask()
+    {
+        while (true)
+        {
+            var current = _busyThreads;
+            if (current >= _maxThreads) return false;
+            if (Interlocked.CompareExchange(ref _busyThreads, current + 1, current) == current)
+                return true;
+        }
+    }
+
+    public void FinishTask()
+    {
+        while (true)
+        {
+            var current = _busyThreads;
+            if (current <= 0) return;
+            if (Interlocked.CompareExchange(ref _busyThreads, current - 1, current) == current)
+                return;
+        }
+    }
 }

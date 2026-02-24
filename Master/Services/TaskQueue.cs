@@ -21,6 +21,21 @@ public class TaskQueue
             .ThenBy(t => t.CreatedAt);
     }
 
+    public TaskModel? TryClaimForDispatch()
+    {
+        var pending = GetPending().ToList();
+        foreach (var task in pending)
+        {
+            var original = (int)task.Status;
+            if (original == (int)Models.TaskStatus.Pending &&
+                Interlocked.CompareExchange(ref task.StatusValue, (int)Models.TaskStatus.Running, original) == original)
+            {
+                return task;
+            }
+        }
+        return null;
+    }
+
     public TaskModel? Get(Guid id)
     {
         _tasks.TryGetValue(id, out var task);

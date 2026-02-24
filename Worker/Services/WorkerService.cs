@@ -20,7 +20,23 @@ public class WorkerService : IWorkerService
 
     public void ExecuteTaskAsync(TaskExecutionRequest request)
     {
-        _state.StartTask();
+        if (!_state.TryStartTask())
+        {
+            Console.WriteLine($"Task '{request.Name}' rejected: no free threads");
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var client = _httpClientFactory.CreateClient();
+                    await client.PostAsJsonAsync(
+                        $"{_config.MasterUrl}/api/task/{request.TaskId}/failed",
+                        new { error = "Worker busy, no free threads" });
+                }
+                catch { }
+            });
+            return;
+        }
+
         Console.WriteLine($"Executing task '{request.Name}' ({request.DurationMs}ms)");
 
         _ = Task.Run(async () =>
@@ -60,7 +76,8 @@ public class WorkerService : IWorkerService
             workerId = _config.WorkerId,
             isReady = _state.IsReady,
             freeThreads = _state.FreeThreads,
-            maxThreads = _state.FreeThreads + GetBusyThreads(),
+            maxThreads = _state.MaxThreads,
+            busyThreads = _state.BusyThreads,
             masterConnection = new
             {
                 masterShutdown = _masterIsShutdown
@@ -80,7 +97,8 @@ public class WorkerService : IWorkerService
 
             isReady = _state.IsReady,
             freeThreads = _state.FreeThreads,
-            maxThreads = _state.FreeThreads + GetBusyThreads(),
+            maxThreads = _state.MaxThreads,
+            busyThreads = _state.BusyThreads,
 
             memoryUsedMB = process.WorkingSet64 / (1024.0 * 1024.0),
             cpuTimeSeconds = process.TotalProcessorTime.TotalSeconds,
@@ -100,11 +118,5 @@ public class WorkerService : IWorkerService
         Console.WriteLine("Master has shut down");
         Console.WriteLine("Worker is now isolated from cluster");
         Console.WriteLine("Worker will continue running and attempt to reconnect if Master restarts");
-    }
-
-    private int GetBusyThreads()
-    {
-        // Pour l'instant, retourner 0. À implémenter si nécessaire
-        return 0;
     }
 }
