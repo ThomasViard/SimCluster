@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simcluster-config
+  namespace: simcluster
+  labels:
+    app: simcluster
+data:
+  MASTER_URL: "http://master-svc:8080"
+  LOG_LEVEL: "Information"
+  HEARTBEAT_INTERVAL: "5"
+  WORKER_TIMEOUT: "30"

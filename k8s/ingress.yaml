@@ -1,0 +1,53 @@
+# Ingress - External HTTP(S) exposure
+# Prerequisite: Ingress Controller (nginx, traefik) installed
+# Minikube: minikube addons enable ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simcluster-ingress
+  namespace: simcluster
+  labels:
+    app: simcluster
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+  # Dashboard - Web interface
+  - host: dashboard.simcluster.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-svc
+            port:
+              number: 80
+  # Master API - External access (optional)
+  - host: api.simcluster.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: master-svc
+            port:
+              number: 8080
+
+---
+# TLS Secret (optional) - Uncomment for HTTPS
+# kubectl create secret tls simcluster-tls --cert=tls.crt --key=tls.key -n simcluster
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: simcluster-tls
+#   namespace: simcluster
+# type: kubernetes.io/tls
+# data:
+#   tls.crt: <base64-encoded-cert>
+#   tls.key: <base64-encoded-key>

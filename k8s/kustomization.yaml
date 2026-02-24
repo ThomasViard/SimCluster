@@ -1,0 +1,21 @@
+# Kustomization - Unified deployment: kubectl apply -k k8s/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: simcluster
+
+commonLabels:
+  project: simcluster
+  managed-by: kustomize
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - master-deployment.yaml
+  - master-service.yaml
+  - worker-deployment.yaml
+  - worker-service.yaml
+  - dashboard-deployment.yaml
+  - dashboard-service.yaml
+  - hpa-worker.yaml
+  - ingress.yaml

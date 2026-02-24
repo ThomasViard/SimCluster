@@ -1,0 +1,19 @@
+# Headless Service - Returns individual Worker IPs (useful for debugging)
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-svc
+  namespace: simcluster
+  labels:
+    app: worker
+    component: compute
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: worker
+  ports:
+  - name: http
+    port: 5001
+    targetPort: 5001
+    protocol: TCP
