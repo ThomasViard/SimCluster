@@ -2,51 +2,45 @@
 using Worker.Models;
 using Worker.Services;
 
-var workerId = Environment.GetEnvironmentVariable("WORKER_ID") ?? "1";
-var port = 5000 + int.Parse(workerId);
+var workerId = Environment.GetEnvironmentVariable("WORKER_ID") ?? Environment.MachineName;
+var workerUrl = Environment.GetEnvironmentVariable("WORKER_URL") ?? "http://localhost:5001";
 var masterUrl = Environment.GetEnvironmentVariable("MASTER_URL") ?? "http://localhost:8080";
 
 Console.SetOut(new PrefixedConsoleWriter(Console.Out, $"[Worker-{workerId}] "));
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging
 builder.Logging.ClearProviders();
 builder.Logging.SetMinimumLevel(LogLevel.None);
 
-// Controllers
 builder.Services.AddControllers();
 
-// Configuration
 builder.Services.Configure<WorkerConfiguration>(options =>
 {
     options.WorkerId = workerId;
-    options.WorkerUrl = $"http://localhost:{port}";
+    options.WorkerUrl = workerUrl;
     options.MasterUrl = masterUrl;
 });
+var uri = new Uri(workerUrl);
+var port = uri.Port;
 
-// Kestrel
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(port);
 });
 
-// Services
 builder.Services.AddSingleton<WorkerState>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddSingleton<WorkerDisconnectNotificationService>();
 builder.Services.AddHttpClient();
 
-// Background Services
 builder.Services.AddHostedService<WorkerRegistrationService>();
 builder.Services.AddHostedService<HeartbeatService>();
 
 var app = builder.Build();
 
-// Map Controllers
 app.MapControllers();
 
-// Gérer l'arrêt propre du Worker
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStopping.Register(() =>
 {

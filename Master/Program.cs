@@ -10,13 +10,11 @@ builder.Logging.SetMinimumLevel(LogLevel.None);
 
 builder.Services.AddControllers();
 
-// Services
 builder.Services.AddSingleton<WorkerRegistry>();
 builder.Services.AddScoped<IWorkerManagementService, WorkerManagementService>();
 builder.Services.AddSingleton<ShutdownNotificationService>();
 builder.Services.AddHttpClient();
 
-// Background Services
 builder.Services.AddHostedService<WorkerMonitoringService>();
 
 var app = builder.Build();
@@ -28,7 +26,6 @@ lifetime.ApplicationStopping.Register(() =>
 {
     Console.WriteLine("Master shutdown initiated...");
 
-    // Notifier tous les Workers de l'arrêt
     using var scope = app.Services.CreateScope();
     var shutdownService = scope.ServiceProvider.GetRequiredService<ShutdownNotificationService>();
     shutdownService.NotifyAllWorkersAsync().GetAwaiter().GetResult();
@@ -36,6 +33,7 @@ lifetime.ApplicationStopping.Register(() =>
     Console.WriteLine("Master stopped");
 });
 
-Console.WriteLine("Starting Master on http://localhost:8080");
+var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://localhost:8080";
+Console.WriteLine($"Starting Master on {url}");
 
-app.Run("http://localhost:8080");
+app.Run();

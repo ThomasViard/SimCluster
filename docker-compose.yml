@@ -1,0 +1,52 @@
+services:
+  master:
+    build:
+      context: .
+      dockerfile: Master/Dockerfile
+    image: simcluster-master:dev
+    container_name: simcluster-master
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/master/ping"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Worker/Dockerfile
+    image: simcluster-worker:dev
+    environment:
+      - MASTER_URL=http://master:8080
+      - WORKER_URL=http://worker:5001
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - master
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/worker/ping"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dashboard/Dockerfile
+    image: simcluster-dashboard:dev
+    container_name: simcluster-dashboard
+    ports:
+      - "3000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    restart: unless-stopped
+
+networks:
+  default:
+    name: simcluster-net
+    driver: bridge

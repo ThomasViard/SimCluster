@@ -1,0 +1,33 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.cache
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Kubernetes
+k8s/
+
+# OS
+.DS_Store
+Thumbs.db
