@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: master
-        image: simcluster-master:latest
+        image: simcluster-master:dev
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

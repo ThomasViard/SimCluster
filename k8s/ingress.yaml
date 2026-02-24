@@ -26,7 +26,7 @@ spec:
           service:
             name: dashboard-svc
             port:
-              number: 80
+              number: 8080
   # Master API - External access (optional)
   - host: api.simcluster.local
     http:

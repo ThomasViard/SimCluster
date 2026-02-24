@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: simcluster-worker:latest
+        image: simcluster-worker:dev
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5001
