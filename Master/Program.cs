@@ -1,4 +1,4 @@
-﻿using Common;
+﻿﻿using Common;
 using Master.Services;
 
 Console.SetOut(new PrefixedConsoleWriter(Console.Out, "[Master] "));
@@ -13,6 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<WorkerRegistry>();
 builder.Services.AddScoped<IWorkerManagementService, WorkerManagementService>();
 builder.Services.AddSingleton<ShutdownNotificationService>();
+builder.Services.AddSingleton<TaskQueue>();
+builder.Services.AddSingleton<IScheduler, RoundRobinScheduler>();
+builder.Services.AddScoped<ITaskManagementService, TaskManagementService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddHostedService<WorkerMonitoringService>();

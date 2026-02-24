@@ -1,10 +1,31 @@
 namespace Master.Models;
 
+public enum TaskPriority
+{
+    Low = 0,
+    Normal = 1,
+    High = 2
+}
+
 public class TaskModel
 {
-    public int Id { get; set; }
-    public required string Title { get; set; }
-    public required string Description { get; set; }
-    public DateTime DueDate { get; set; }
-    public bool IsCompleted { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string Name { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public int DurationMs { get; set; } = 5000;
+    public TaskPriority Priority { get; set; } = TaskPriority.Normal;
+    public Models.TaskStatus Status { get; set; } = Models.TaskStatus.Pending;
+    public string? AssignedWorkerId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+public enum TaskStatus
+{
+    Pending,
+    Running,
+    Completed,
+    Failed
 }

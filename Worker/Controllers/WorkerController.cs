@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Worker.Models;
 using Worker.Services;
 
 namespace Worker.Controllers;
@@ -27,6 +28,16 @@ public class WorkerController(IWorkerService workerService) : ControllerBase
     {
         var metrics = _workerService.GetMetrics();
         return Ok(metrics);
+    }
+
+    [HttpPost("execute")]
+    public IActionResult ExecuteTask([FromBody] TaskExecutionRequest request)
+    {
+        if (request.TaskId == Guid.Empty)
+            return BadRequest(new { error = "TaskId is required" });
+
+        _workerService.ExecuteTaskAsync(request);
+        return Accepted(new { message = "Task accepted", taskId = request.TaskId });
     }
 
     [HttpPost("notifications/master-shutdown")]
