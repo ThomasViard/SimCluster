@@ -42,6 +42,16 @@ public class WorkerManagementService(WorkerRegistry registry) : IWorkerManagemen
         registry.RemoveWorker(workerId);
     }
 
+    public void EnableWorker(string workerId)
+    {
+        registry.EnableWorker(workerId);
+    }
+
+    public void DisableWorker(string workerId)
+    {
+        registry.DisableWorker(workerId);
+    }
+
     public int GetWorkerCount()
     {
         return registry.GetWorkerCount();

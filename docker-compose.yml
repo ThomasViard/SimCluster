@@ -22,8 +22,8 @@ services:
       dockerfile: Worker/Dockerfile
     image: simcluster-worker:dev
     environment:
-      - MASTER_URL=http://master:8080
       - ASPNETCORE_ENVIRONMENT=Development
+      - MASTER_URL=http://master:8080
     depends_on:
       - master
     healthcheck:

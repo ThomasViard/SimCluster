@@ -9,4 +9,5 @@ public class WorkerInfo
     public bool IsAvailable { get; set; } = true;
     public int FreeThreads { get; set; }
     public bool IsReady { get; set; }
+    public bool IsEnabled { get; set; } = true;
 }

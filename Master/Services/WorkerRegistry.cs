@@ -18,7 +18,8 @@ public class WorkerRegistry
             Url = url,
             RegisteredAt = DateTime.UtcNow,
             LastHeartbeat = DateTime.UtcNow,
-            IsAvailable = true
+            IsAvailable = true,
+            IsEnabled = true
         };
 
         _workers.AddOrUpdate(workerId, worker, (key, existing) =>
@@ -81,7 +82,25 @@ public class WorkerRegistry
     public IEnumerable<WorkerInfo> GetAvailableWorkers()
     {
         var threshold = DateTime.UtcNow.AddSeconds(-30);
-        return [.. _workers.Values.Where(w => w.IsAvailable && w.LastHeartbeat > threshold && w.IsReady)];
+        return [.. _workers.Values.Where(w => w.IsEnabled && w.IsAvailable && w.LastHeartbeat > threshold && w.IsReady)];
+    }
+
+    public void EnableWorker(string workerId)
+    {
+        if (_workers.TryGetValue(workerId, out var worker))
+        {
+            worker.IsEnabled = true;
+            Console.WriteLine($"Worker-{workerId} enabled");
+        }
+    }
+
+    public void DisableWorker(string workerId)
+    {
+        if (_workers.TryGetValue(workerId, out var worker))
+        {
+            worker.IsEnabled = false;
+            Console.WriteLine($"Worker-{workerId} disabled");
+        }
     }
 
     public WorkerInfo? GetWorker(string workerId)

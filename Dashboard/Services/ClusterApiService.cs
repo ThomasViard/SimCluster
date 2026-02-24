@@ -31,6 +31,36 @@ public class ClusterApiService(HttpClient httpClient)
         }
         catch { return false; }
     }
+
+    public async Task<bool> EnableWorkerAsync(string workerId)
+    {
+        try
+        {
+            var response = await httpClient.PostAsync($"/api/master/workers/{workerId}/enable", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    public async Task<bool> DisableWorkerAsync(string workerId)
+    {
+        try
+        {
+            var response = await httpClient.PostAsync($"/api/master/workers/{workerId}/disable", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    public async Task<bool> RemoveWorkerAsync(string workerId)
+    {
+        try
+        {
+            var response = await httpClient.DeleteAsync($"/api/master/workers/{workerId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
 }
 
 public class WorkersResponse
@@ -48,6 +78,7 @@ public class WorkerDto
     public bool IsAvailable { get; set; }
     public int FreeThreads { get; set; }
     public bool IsReady { get; set; }
+    public bool IsEnabled { get; set; }
 }
 
 public class TasksResponse

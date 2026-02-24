@@ -64,21 +64,40 @@
                         <th>Status</th>
                         <th>Free Threads</th>
                         <th>Last Heartbeat</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var w in _workers)
                     {
-                        <tr>
+                        <tr class="@(!w.IsEnabled ? "row-disabled" : "")">
                             <td class="mono">@w.WorkerId[..Math.Min(12, w.WorkerId.Length)]</td>
                             <td class="mono">@w.Url</td>
                             <td>
-                                <span class="badge @(w.IsAvailable && w.IsReady ? "badge-completed" : "badge-failed")">
-                                    @(w.IsAvailable && w.IsReady ? "Ready" : "Offline")
-                                </span>
+                                @if (!w.IsEnabled)
+                                {
+                                    <span class="badge badge-disabled">Disabled</span>
+                                }
+                                else
+                                {
+                                    <span class="badge @(w.IsAvailable && w.IsReady ? "badge-completed" : "badge-failed")">
+                                        @(w.IsAvailable && w.IsReady ? "Ready" : "Offline")
+                                    </span>
+                                }
                             </td>
                             <td>@w.FreeThreads</td>
                             <td>@w.LastHeartbeat.ToString("HH:mm:ss")</td>
+                            <td class="actions">
+                                @if (w.IsEnabled)
+                                {
+                                    <button class="btn-action btn-disable" @onclick="() => ToggleWorker(w.WorkerId, false)" title="Disable">Disable</button>
+                                }
+                                else
+                                {
+                                    <button class="btn-action btn-enable" @onclick="() => ToggleWorker(w.WorkerId, true)" title="Enable">Enable</button>
+                                }
+                                <button class="btn-action btn-remove" @onclick="() => RemoveWorker(w.WorkerId)" title="Remove">✕</button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -181,4 +200,19 @@
     }
 
     public void Dispose() => _timer?.Dispose();
+
+    private async Task ToggleWorker(string workerId, bool enable)
+    {
+        if (enable)
+            await Api.EnableWorkerAsync(workerId);
+        else
+            await Api.DisableWorkerAsync(workerId);
+        await Refresh();
+    }
+
+    private async Task RemoveWorker(string workerId)
+    {
+        await Api.RemoveWorkerAsync(workerId);
+        await Refresh();
+    }
 }
