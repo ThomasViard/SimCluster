@@ -3,8 +3,10 @@ using Worker.Models;
 using Worker.Services;
 
 var workerId = Environment.GetEnvironmentVariable("WORKER_ID") ?? Environment.MachineName;
-var workerUrl = Environment.GetEnvironmentVariable("WORKER_URL") ?? "http://localhost:5001";
 var masterUrl = Environment.GetEnvironmentVariable("MASTER_URL") ?? "http://localhost:8080";
+var workerPort = Environment.GetEnvironmentVariable("WORKER_PORT") ?? "5001";
+var workerUrl = Environment.GetEnvironmentVariable("WORKER_URL")
+    ?? $"http://{System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName()).AddressList.First(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)}:{workerPort}";
 
 Console.SetOut(new PrefixedConsoleWriter(Console.Out, $"[Worker-{workerId}] "));
 
@@ -21,8 +23,7 @@ builder.Services.Configure<WorkerConfiguration>(options =>
     options.WorkerUrl = workerUrl;
     options.MasterUrl = masterUrl;
 });
-var uri = new Uri(workerUrl);
-var port = uri.Port;
+var port = int.Parse(workerPort);
 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -40,6 +41,7 @@ builder.Services.AddHostedService<HeartbeatService>();
 var app = builder.Build();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStopping.Register(() =>

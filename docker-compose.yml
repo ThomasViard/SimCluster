@@ -23,7 +23,6 @@ services:
     image: simcluster-worker:dev
     environment:
       - MASTER_URL=http://master:8080
-      - WORKER_URL=http://worker:5001
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - master
