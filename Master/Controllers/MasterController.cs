@@ -6,7 +6,9 @@ namespace Master.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MasterController(IWorkerManagementService workerManagementService) : ControllerBase
+public class MasterController(
+    IWorkerManagementService workerManagementService,
+    DockerScalingService dockerScaling) : ControllerBase
 {
     [HttpGet("ping")]
     public IActionResult Ping()
@@ -115,6 +117,35 @@ public class MasterController(IWorkerManagementService workerManagementService) 
             return NotFound(new { error = $"Worker {workerId} not found" });
         workerManagementService.RemoveWorker(workerId);
         return Ok(new { success = true, message = $"Worker {workerId} removed" });
+    }
+
+    [HttpPost("scale/up")]
+    public async Task<IActionResult> ScaleUp()
+    {
+        var containerId = await dockerScaling.AddWorkerAsync();
+        if (containerId == null)
+            return StatusCode(500, new { error = "Failed to create worker container" });
+        return Ok(new { success = true, containerId, dynamicCount = dockerScaling.DynamicWorkerCount });
+    }
+
+    [HttpPost("scale/down")]
+    public async Task<IActionResult> ScaleDown()
+    {
+        var removedId = await dockerScaling.RemoveWorkerAsync();
+        if (removedId == null)
+            return BadRequest(new { error = "No dynamic workers to remove" });
+        workerManagementService.RemoveWorker(removedId);
+        return Ok(new { success = true, removedWorkerId = removedId, dynamicCount = dockerScaling.DynamicWorkerCount });
+    }
+
+    [HttpGet("scale")]
+    public IActionResult GetScaleInfo()
+    {
+        return Ok(new
+        {
+            totalWorkers = workerManagementService.GetWorkerCount(),
+            dynamicWorkers = dockerScaling.DynamicWorkerCount
+        });
     }
 
     [HttpPost("notifications/worker-disconnect")]

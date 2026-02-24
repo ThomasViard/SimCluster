@@ -23,6 +23,7 @@ else
 
 builder.Services.AddScoped<ITaskManagementService, TaskManagementService>();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<DockerScalingService>();
 
 builder.Services.AddHostedService<WorkerMonitoringService>();
 

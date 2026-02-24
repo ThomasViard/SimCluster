@@ -55,7 +55,13 @@
 
     <div class="panels">
         <div class="panel">
-            <h4>Workers (@_workers.Count)</h4>
+            <div class="panel-header">
+                <h4>Workers (@_workers.Count)</h4>
+                <div class="scale-controls">
+                    <button class="btn-action btn-enable" @onclick="ScaleUp" disabled="@_scaling" title="Add Worker">+ Add Worker</button>
+                    <button class="btn-action btn-disable" @onclick="ScaleDown" disabled="@_scaling" title="Remove Dynamic Worker">- Remove</button>
+                </div>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -143,6 +149,7 @@
     private int _newTaskDuration = 3000;
     private int _newTaskPriority = 1;
     private bool _submitting;
+    private bool _scaling;
 
     protected override async Task OnInitializedAsync()
     {
@@ -214,5 +221,22 @@
     {
         await Api.RemoveWorkerAsync(workerId);
         await Refresh();
+    }
+
+    private async Task ScaleUp()
+    {
+        _scaling = true;
+        await Api.ScaleUpAsync();
+        await Task.Delay(2000);
+        await Refresh();
+        _scaling = false;
+    }
+
+    private async Task ScaleDown()
+    {
+        _scaling = true;
+        await Api.ScaleDownAsync();
+        await Refresh();
+        _scaling = false;
     }
 }

@@ -138,6 +138,22 @@ body {
   color: var(--text);
 }
 
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panel-header h4 {
+  margin-bottom: 0;
+}
+
+.scale-controls {
+  display: flex;
+  gap: 8px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

@@ -7,8 +7,12 @@ services:
     container_name: simcluster-master
     ports:
       - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - WORKER_IMAGE=simcluster-worker:dev
+      - DOCKER_NETWORK=simcluster-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/master/ping"]
       interval: 10s

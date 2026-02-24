@@ -61,6 +61,26 @@ public class ClusterApiService(HttpClient httpClient)
         }
         catch { return false; }
     }
+
+    public async Task<bool> ScaleUpAsync()
+    {
+        try
+        {
+            var response = await httpClient.PostAsync("/api/master/scale/up", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    public async Task<bool> ScaleDownAsync()
+    {
+        try
+        {
+            var response = await httpClient.PostAsync("/api/master/scale/down", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
 }
 
 public class WorkersResponse
