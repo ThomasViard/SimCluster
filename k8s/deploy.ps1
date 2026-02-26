@@ -15,14 +15,18 @@
 #   ./deploy.ps1 -Action deploy      # Deployer les manifests K8s
 #   ./deploy.ps1 -Action status      # Statut du cluster
 #   ./deploy.ps1 -Action test        # Lancer un test de charge (100 tasks)
+#   ./deploy.ps1 -Action stress      # Stress test (500 tasks) pour HPA
+#   ./deploy.ps1 -Action hpa         # Observer le HPA en temps reel
 #   ./deploy.ps1 -Action dashboard   # Ouvrir le Dashboard (port-forward)
-#   ./deploy.ps1 -Action delete      # Supprimer le namespace simcluster
 #   ./deploy.ps1 -Action scale -Replicas 5  # Scaler les workers
+#   ./deploy.ps1 -Action kill        # Supprimer un pod worker (resilience)
+#   ./deploy.ps1 -Action logs        # Voir les logs d'un composant
+#   ./deploy.ps1 -Action delete      # Supprimer le namespace simcluster
 #
 # ==============================================================================
 
 param(
-    [ValidateSet("all", "build", "load", "deploy", "status", "test", "dashboard", "delete", "scale", "logs")]
+    [ValidateSet("all", "build", "load", "deploy", "status", "test", "stress", "dashboard", "delete", "scale", "logs", "hpa", "kill")]
     [string]$Action = "all",
     [int]$Replicas = 0
 )
@@ -92,9 +96,11 @@ function Deploy-Cluster {
     kubectl apply -k "$ProjectRoot/k8s" 2>&1
 
     Write-Step "Attente du rollout des deployments..."
-    kubectl rollout status deployment/master    -n $Namespace --timeout=120s
-    kubectl rollout status deployment/worker    -n $Namespace --timeout=120s
-    kubectl rollout status deployment/dashboard -n $Namespace --timeout=120s
+    kubectl rollout status deployment/master     -n $Namespace --timeout=120s
+    kubectl rollout status deployment/worker     -n $Namespace --timeout=120s
+    kubectl rollout status deployment/dashboard  -n $Namespace --timeout=120s
+    kubectl rollout status deployment/prometheus -n $Namespace --timeout=120s
+    kubectl rollout status deployment/grafana    -n $Namespace --timeout=120s
 
     Write-Ok "Tous les pods sont Ready"
     Get-Status
@@ -132,12 +138,22 @@ function Get-Status {
 function Start-Dashboard {
     Write-Step "Ouverture des acces au cluster..."
 
-    Write-Host "  Dashboard : http://localhost:3000"
-    Write-Host "  Master API: http://localhost:9090"
+    Write-Host "  Dashboard    : http://localhost:3000"
+    Write-Host "  Master API   : http://localhost:9090"
+    Write-Host "  Prometheus   : http://localhost:9091"
+    Write-Host "  Grafana      : http://localhost:3001  (admin / simcluster)"
     Write-Host "  (Ctrl+C pour arreter)`n"
 
     Start-Job -ScriptBlock {
         kubectl port-forward svc/master-svc 9090:8080 -n simcluster 2>&1 | Out-Null
+    } | Out-Null
+
+    Start-Job -ScriptBlock {
+        kubectl port-forward svc/prometheus-svc 9091:9090 -n simcluster 2>&1 | Out-Null
+    } | Out-Null
+
+    Start-Job -ScriptBlock {
+        kubectl port-forward svc/grafana-svc 3001:3001 -n simcluster 2>&1 | Out-Null
     } | Out-Null
 
     kubectl port-forward svc/dashboard-svc 3000:8080 -n $Namespace
@@ -210,6 +226,74 @@ function Scale-Workers {
 }
 
 # ==============================================================================
+# STRESS
+# Soumet 500 taches CPU-intensives pour declencher le HPA.
+# Les taches sont longues (1-5s) pour saturer les threads des workers.
+# ==============================================================================
+function Run-Stress {
+    Write-Step "Stress test : 500 taches CPU-intensives pour declencher le HPA..."
+
+    $job = Start-Job -ScriptBlock {
+        kubectl port-forward svc/master-svc 9090:8080 -n simcluster 2>&1 | Out-Null
+    }
+    Start-Sleep -Seconds 3
+
+    $rng = [System.Random]::new()
+    for ($i = 1; $i -le 500; $i++) {
+        $body = @{
+            name       = "HPA-Stress-$i"
+            durationMs = $rng.Next(1000, 5000)
+            priority   = 2
+        } | ConvertTo-Json -Compress
+
+        Invoke-RestMethod -Method Post -Uri "http://localhost:9090/api/task" `
+            -ContentType "application/json" -Body $body -ErrorAction SilentlyContinue | Out-Null
+
+        if ($i % 100 -eq 0) { Write-Host "  $i/500 submitted..." }
+    }
+
+    Write-Ok "500 taches soumises. Le HPA devrait reagir dans 30-60s."
+    Write-Host "  Lancer '.\deploy.ps1 -Action hpa' pour observer le scaling." -ForegroundColor Yellow
+
+    Stop-Job $job -ErrorAction SilentlyContinue
+    Remove-Job $job -ErrorAction SilentlyContinue
+}
+
+# ==============================================================================
+# HPA
+# Affiche le HPA en temps reel (mode watch) pour observer le scaling automatique.
+# ==============================================================================
+function Watch-HPA {
+    Write-Step "Observation du HPA (Ctrl+C pour arreter)..."
+    Write-Host ""
+    kubectl get hpa -n $Namespace -w
+}
+
+# ==============================================================================
+# KILL
+# Supprime un pod worker aleatoire pour demontrer la resilience.
+# K8s le relance automatiquement grace au ReplicaSet.
+# ==============================================================================
+function Kill-Worker {
+    Write-Step "Resilience : suppression d'un pod worker..."
+
+    $pods = kubectl get pods -n $Namespace -l app=worker --no-headers -o custom-columns=":metadata.name" 2>$null
+    if (-not $pods) {
+        Write-Warn "Aucun worker pod trouve."
+        return
+    }
+    $podList = $pods -split "`n" | Where-Object { $_ -ne "" }
+    $target = $podList | Get-Random
+    Write-Host "  Suppression du pod: $target" -ForegroundColor Yellow
+    kubectl delete pod $target -n $Namespace
+
+    Write-Step "Observation du redemarrage automatique..."
+    Start-Sleep -Seconds 2
+    kubectl get pods -n $Namespace -l app=worker -o wide
+    Write-Ok "K8s relance automatiquement le pod supprime."
+}
+
+# ==============================================================================
 # LOGS
 # Affiche les logs en temps reel de tous les pods d'un composant.
 # ==============================================================================
@@ -249,8 +333,11 @@ switch ($Action) {
     "deploy"    { Deploy-Cluster }
     "status"    { Get-Status }
     "test"      { Run-Test }
+    "stress"    { Run-Stress }
     "dashboard" { Start-Dashboard }
     "scale"     { Scale-Workers }
+    "hpa"       { Watch-HPA }
+    "kill"      { Kill-Worker }
     "logs"      { Get-Logs }
     "delete"    { Delete-Cluster }
 }
