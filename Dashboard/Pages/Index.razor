@@ -48,7 +48,7 @@
                 @(_submitting ? "Sending..." : "Submit")
             </button>
             <button class="btn-submit btn-batch" @onclick="SubmitBatch" disabled="@_submitting">
-                Send 10 tasks
+                Send 1000 tasks
             </button>
         </div>
     </div>
@@ -57,10 +57,6 @@
         <div class="panel">
             <div class="panel-header">
                 <h4>Workers (@_workers.Count)</h4>
-                <div class="scale-controls">
-                    <button class="btn-action btn-enable" @onclick="ScaleUp" disabled="@_scaling" title="Add Worker">+ Add Worker</button>
-                    <button class="btn-action btn-disable" @onclick="ScaleDown" disabled="@_scaling" title="Remove Dynamic Worker">- Remove</button>
-                </div>
             </div>
             <table>
                 <thead>
@@ -93,17 +89,6 @@
                             </td>
                             <td>@w.FreeThreads</td>
                             <td>@w.LastHeartbeat.ToString("HH:mm:ss")</td>
-                            <td class="actions">
-                                @if (w.IsEnabled)
-                                {
-                                    <button class="btn-action btn-disable" @onclick="() => ToggleWorker(w.WorkerId, false)" title="Disable">Disable</button>
-                                }
-                                else
-                                {
-                                    <button class="btn-action btn-enable" @onclick="() => ToggleWorker(w.WorkerId, true)" title="Enable">Enable</button>
-                                }
-                                <button class="btn-action btn-remove" @onclick="() => RemoveWorker(w.WorkerId)" title="Remove">✕</button>
-                            </td>
                         </tr>
                     }
                 </tbody>
@@ -193,7 +178,7 @@
     {
         _submitting = true;
         var rng = new Random();
-        for (int i = 1; i <= 10; i++)
+        for (int i = 1; i <= 1000; i++)
         {
             await Api.SubmitTaskAsync(new TaskSubmitRequest
             {
@@ -207,36 +192,4 @@
     }
 
     public void Dispose() => _timer?.Dispose();
-
-    private async Task ToggleWorker(string workerId, bool enable)
-    {
-        if (enable)
-            await Api.EnableWorkerAsync(workerId);
-        else
-            await Api.DisableWorkerAsync(workerId);
-        await Refresh();
-    }
-
-    private async Task RemoveWorker(string workerId)
-    {
-        await Api.RemoveWorkerAsync(workerId);
-        await Refresh();
-    }
-
-    private async Task ScaleUp()
-    {
-        _scaling = true;
-        await Api.ScaleUpAsync();
-        await Task.Delay(2000);
-        await Refresh();
-        _scaling = false;
-    }
-
-    private async Task ScaleDown()
-    {
-        _scaling = true;
-        await Api.ScaleDownAsync();
-        await Refresh();
-        _scaling = false;
-    }
 }
