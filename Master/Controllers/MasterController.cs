@@ -48,7 +48,7 @@ public class MasterController(
             return NotFound(new { error = $"Worker {request.WorkerId} not registered" });
         }
 
-        workerManagementService.UpdateHeartbeat(request.WorkerId, request.IsReady, request.FreeThreads);
+        workerManagementService.UpdateHeartbeat(request.WorkerId, request.IsReady, request.FreeThreads, request.MaxThreads);
         return Ok(new { success = true, message = "Heartbeat received" });
     }
 

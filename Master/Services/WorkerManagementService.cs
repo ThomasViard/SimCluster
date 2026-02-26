@@ -10,10 +10,10 @@ public class WorkerManagementService(WorkerRegistry registry) : IWorkerManagemen
         Console.WriteLine($"Worker {workerId} registered successfully");
     }
 
-    public void UpdateHeartbeat(string workerId, bool isReady, int freeThreads)
+    public void UpdateHeartbeat(string workerId, bool isReady, int freeThreads, int maxThreads)
     {
-        registry.UpdateHeartbeat(workerId, isReady, freeThreads);
-        Console.WriteLine($"Heartbeat from Worker-{workerId} (Ready: {isReady}, Free: {freeThreads})");
+        registry.UpdateHeartbeat(workerId, isReady, freeThreads, maxThreads);
+        Console.WriteLine($"Heartbeat from Worker-{workerId} (Ready: {isReady}, Free: {freeThreads}/{maxThreads})");
     }
 
     public void HandleWorkerDisconnect(string workerId, string reason)

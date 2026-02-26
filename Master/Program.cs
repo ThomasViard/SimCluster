@@ -32,6 +32,37 @@ var app = builder.Build();
 
 app.MapControllers();
 
+app.MapGet("/metrics", (TaskQueue taskQueue, WorkerRegistry registry) =>
+{
+    var sb = new System.Text.StringBuilder();
+
+    sb.AppendLine("# HELP simcluster_tasks_pending Number of pending tasks");
+    sb.AppendLine("# TYPE simcluster_tasks_pending gauge");
+    sb.AppendLine($"simcluster_tasks_pending {taskQueue.PendingCount}");
+
+    sb.AppendLine("# HELP simcluster_tasks_running Number of running tasks");
+    sb.AppendLine("# TYPE simcluster_tasks_running gauge");
+    sb.AppendLine($"simcluster_tasks_running {taskQueue.RunningCount}");
+
+    sb.AppendLine("# HELP simcluster_tasks_completed_total Total completed tasks");
+    sb.AppendLine("# TYPE simcluster_tasks_completed_total counter");
+    sb.AppendLine($"simcluster_tasks_completed_total {taskQueue.CompletedCount}");
+
+    sb.AppendLine("# HELP simcluster_tasks_failed_total Total failed tasks");
+    sb.AppendLine("# TYPE simcluster_tasks_failed_total counter");
+    sb.AppendLine($"simcluster_tasks_failed_total {taskQueue.FailedCount}");
+
+    sb.AppendLine("# HELP simcluster_workers_total Total registered workers");
+    sb.AppendLine("# TYPE simcluster_workers_total gauge");
+    sb.AppendLine($"simcluster_workers_total {registry.GetWorkerCount()}");
+
+    sb.AppendLine("# HELP simcluster_workers_available Number of available workers");
+    sb.AppendLine("# TYPE simcluster_workers_available gauge");
+    sb.AppendLine($"simcluster_workers_available {registry.GetAvailableWorkerCount()}");
+
+    return Results.Text(sb.ToString(), "text/plain; version=0.0.4; charset=utf-8");
+});
+
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStopping.Register(() =>
 {

@@ -40,7 +40,7 @@ public class WorkerRegistry
         }
     }
 
-    public void UpdateHeartbeat(string workerId, bool isReady, int freeThreads)
+    public void UpdateHeartbeat(string workerId, bool isReady, int freeThreads, int maxThreads)
     {
         if (_workers.TryGetValue(workerId, out var worker))
         {
@@ -49,6 +49,7 @@ public class WorkerRegistry
             worker.LastHeartbeat = DateTime.UtcNow;
             worker.IsReady = isReady;
             worker.FreeThreads = freeThreads;
+            worker.MaxThreads = maxThreads > 0 ? maxThreads : 16;
             worker.IsAvailable = true;
 
             if (wasOffline)
@@ -89,7 +90,7 @@ public class WorkerRegistry
     {
         if (_workers.TryGetValue(workerId, out var worker))
         {
-            worker.FreeThreads++;
+            worker.FreeThreads = Math.Min(worker.FreeThreads + 1, worker.MaxThreads);
         }
     }
 

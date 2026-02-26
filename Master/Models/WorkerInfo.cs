@@ -8,6 +8,7 @@ public class WorkerInfo
     public DateTime LastHeartbeat { get; set; } = DateTime.UtcNow;
     public bool IsAvailable { get; set; } = true;
     public int FreeThreads { get; set; }
+    public int MaxThreads { get; set; } = 16;
     public bool IsReady { get; set; }
     public bool IsEnabled { get; set; } = true;
 }

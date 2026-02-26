@@ -63,6 +63,7 @@ public class HeartbeatService(
                 WorkerId = _config.WorkerId,
                 IsReady = _state.IsReady,
                 FreeThreads = _state.FreeThreads,
+                MaxThreads = _state.MaxThreads,
                 Timestamp = DateTime.UtcNow
             };
 
