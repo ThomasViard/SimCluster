@@ -4,6 +4,8 @@ public class WorkerState
 {
     private int _busyThreads;
     private readonly int _maxThreads;
+    private long _tasksExecutedTotal;
+    private long _tasksFailedTotal;
 
     public WorkerState(int? maxThreads = null)
     {
@@ -14,6 +16,11 @@ public class WorkerState
     public int FreeThreads => Math.Max(0, _maxThreads - _busyThreads);
     public int BusyThreads => _busyThreads;
     public int MaxThreads => _maxThreads;
+    public long TasksExecutedTotal => Interlocked.Read(ref _tasksExecutedTotal);
+    public long TasksFailedTotal => Interlocked.Read(ref _tasksFailedTotal);
+
+    public void IncrementTasksExecuted() => Interlocked.Increment(ref _tasksExecutedTotal);
+    public void IncrementTasksFailed() => Interlocked.Increment(ref _tasksFailedTotal);
 
     public bool TryStartTask()
     {

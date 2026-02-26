@@ -43,7 +43,8 @@ public class WorkerService : IWorkerService
         {
             try
             {
-                await Task.Delay(request.DurationMs);
+                SimulateCpuWork(request.DurationMs);
+                _state.IncrementTasksExecuted();
                 Console.WriteLine($"Task '{request.Name}' completed");
 
                 var client = _httpClientFactory.CreateClient();
@@ -51,6 +52,7 @@ public class WorkerService : IWorkerService
             }
             catch (Exception ex)
             {
+                _state.IncrementTasksFailed();
                 Console.WriteLine($"Task '{request.Name}' failed: {ex.Message}");
 
                 try
@@ -67,6 +69,26 @@ public class WorkerService : IWorkerService
                 _state.FinishTask();
             }
         });
+    }
+
+    /// <summary>
+    /// Simulates CPU-intensive work for the specified duration.
+    /// Uses a tight computation loop instead of Task.Delay so that actual CPU
+    /// is consumed, enabling Kubernetes HPA to detect load and autoscale.
+    /// </summary>
+    private static void SimulateCpuWork(int durationMs)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        double result = 0;
+        while (stopwatch.ElapsedMilliseconds < durationMs)
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                result += Math.Sqrt(i * 3.14159265) * Math.Sin(i * 0.01);
+            }
+        }
+        // Prevent compiler optimization
+        if (result == double.MinValue) Console.Write("");
     }
 
     public object GetStatus()
