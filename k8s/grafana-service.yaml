@@ -1,0 +1,18 @@
+# Grafana Service - Internal access (port-forward for external)
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-svc
+  namespace: simcluster
+  labels:
+    app: grafana
+    component: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: grafana
+  ports:
+  - name: http
+    port: 3001
+    targetPort: 3001
+    protocol: TCP
