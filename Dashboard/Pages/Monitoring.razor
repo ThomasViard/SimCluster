@@ -1,0 +1,85 @@
+@page "/monitoring"
+@using Dashboard.Services
+@inject GrafanaSettings GrafanaConfig
+@implements IDisposable
+
+<PageTitle>SimCluster - Monitoring</PageTitle>
+
+<div class="dashboard">
+    <h2>Cluster Monitoring</h2>
+    <p class="monitoring-subtitle">Donnees temps reel via Prometheus + Grafana</p>
+
+    <div class="grafana-controls">
+        <select @bind="_timeRange">
+            <option value="5m">5 minutes</option>
+            <option value="15m">15 minutes</option>
+            <option value="30m">30 minutes</option>
+            <option value="1h">1 heure</option>
+        </select>
+        <button class="btn-submit" @onclick="Refresh">Rafraichir</button>
+    </div>
+
+    <div class="grafana-grid">
+        <div class="grafana-panel wide">
+            <h4>Task Queue (Pending + Running)</h4>
+            <iframe src="@PanelUrl(7)" frameborder="0"></iframe>
+        </div>
+
+        <div class="grafana-panel wide">
+            <h4>Task Throughput (completed/s)</h4>
+            <iframe src="@PanelUrl(8)" frameborder="0"></iframe>
+        </div>
+
+        <div class="grafana-panel wide">
+            <h4>Worker Busy Threads</h4>
+            <iframe src="@PanelUrl(9)" frameborder="0"></iframe>
+        </div>
+
+        <div class="grafana-panel wide">
+            <h4>Worker CPU Usage</h4>
+            <iframe src="@PanelUrl(10)" frameborder="0"></iframe>
+        </div>
+
+        <div class="grafana-panel wide">
+            <h4>Workers Count</h4>
+            <iframe src="@PanelUrl(11)" frameborder="0"></iframe>
+        </div>
+
+        <div class="grafana-panel wide">
+            <h4>Worker Memory</h4>
+            <iframe src="@PanelUrl(12)" frameborder="0"></iframe>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _timeRange = "15m";
+    private int _refreshKey = 0;
+
+    private string PanelUrl(int panelId)
+    {
+        return $"/grafana/d-solo/simcluster-main/simcluster?orgId=1&panelId={panelId}&from=now-{_timeRange}&to=now&refresh=5s&_k={_refreshKey}";
+    }
+
+    private void Refresh()
+    {
+        _refreshKey++;
+        StateHasChanged();
+    }
+
+    private Timer? _autoRefresh;
+
+    protected override void OnInitialized()
+    {
+        _autoRefresh = new Timer(_ =>
+        {
+            _refreshKey++;
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    public void Dispose()
+    {
+        _autoRefresh?.Dispose();
+    }
+}
